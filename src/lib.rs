@@ -190,7 +190,7 @@ pub mod util;
 pub type Result<T> = std::result::Result<T, AsepriteParseError>;
 
 pub use cel::Cel;
-// pub use color_profile::ColorProfile;
+pub use color_profile::{ColorProfile, ColorProfileType};
 pub use error::AsepriteParseError;
 pub use external_file::{ExternalFile, ExternalFileId, ExternalFilesById};
 pub use file::{AsepriteFile, Frame, LayersIter, PixelFormat};

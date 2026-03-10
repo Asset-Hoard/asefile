@@ -602,6 +602,57 @@ fn compute_indexed() {
     assert_eq!(data[7], 13);
 }
 
+#[test]
+fn icc_color_profile_generated() {
+    let f = load_test_file("icc_profile");
+    let profile = f.color_profile().expect("Expected a color profile");
+    assert_eq!(profile.profile_type, ColorProfileType::ICC);
+    assert!(profile.fixed_gamma.is_none());
+    let icc_data = profile.icc_profile.as_ref().expect("Expected ICC data");
+    assert_eq!(icc_data.len(), 132);
+    // Verify ICC header signature 'acsp' at offset 36
+    assert_eq!(&icc_data[36..40], b"acsp");
+}
+
+#[test]
+fn srgb_color_profile() {
+    let f = load_test_file("basic-16x16");
+    let profile = f.color_profile().expect("Expected a color profile");
+    assert_eq!(profile.profile_type, ColorProfileType::Srgb);
+    assert!(profile.fixed_gamma.is_none());
+    assert!(profile.icc_profile.is_none());
+}
+
+#[test]
+fn srgb_linear_gamma() {
+    let f = load_test_file("srgb_linear_gamma");
+    let profile = f.color_profile().expect("Expected a color profile");
+    assert_eq!(profile.profile_type, ColorProfileType::Srgb);
+    let gamma = profile.fixed_gamma.expect("Expected fixed gamma");
+    assert!((gamma - 1.0).abs() < 1e-6, "Expected gamma 1.0, got {}", gamma);
+    assert!(profile.icc_profile.is_none());
+}
+
+#[test]
+fn srgb_gamma22() {
+    let f = load_test_file("srgb_gamma22");
+    let profile = f.color_profile().expect("Expected a color profile");
+    assert_eq!(profile.profile_type, ColorProfileType::Srgb);
+    let gamma = profile.fixed_gamma.expect("Expected fixed gamma");
+    assert!((gamma - 2.2).abs() < 1e-4, "Expected gamma 2.2, got {}", gamma);
+}
+
+#[test]
+fn icc_with_gamma() {
+    let f = load_test_file("icc_with_gamma");
+    let profile = f.color_profile().expect("Expected a color profile");
+    assert_eq!(profile.profile_type, ColorProfileType::ICC);
+    let gamma = profile.fixed_gamma.expect("Expected fixed gamma");
+    assert!((gamma - 1.8).abs() < 1e-4, "Expected gamma 1.8, got {}", gamma);
+    let icc_data = profile.icc_profile.as_ref().expect("Expected ICC data");
+    assert!(!icc_data.is_empty());
+}
+
 /*
 #[test]
 fn gen_random_pixels() {

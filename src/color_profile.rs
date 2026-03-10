@@ -1,15 +1,14 @@
 use crate::{reader::AseReader, AsepriteParseError, Result};
 
-#[allow(unused)]
 #[derive(Debug)]
 pub struct ColorProfile {
     pub profile_type: ColorProfileType,
     pub fixed_gamma: Option<f64>,
-    // pub icc_profile: Option<Vec<u8>>,
+    pub icc_profile: Option<Vec<u8>>,
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ColorProfileType {
     None,
     Srgb,
@@ -20,27 +19,27 @@ pub(crate) fn parse_chunk(data: &[u8]) -> Result<ColorProfile> {
     let mut reader = AseReader::new(data);
     let profile_type = reader.word()?;
     let flags = reader.word()?;
-    let _fixed_gamma = reader.dword()?;
+    let raw_gamma = reader.dword()?;
     reader.skip_reserved(8)?;
 
     let profile_type = parse_color_profile_type(profile_type)?;
     let fixed_gamma = if flags & 1 != 0 {
-        return Err(AsepriteParseError::UnsupportedFeature(
-            "Custom gamma is currently not supported.".to_owned(),
-        ));
+        Some(raw_gamma as f64 / 65536.0)
     } else {
         None
     };
 
-    if profile_type == ColorProfileType::ICC {
-        return Err(AsepriteParseError::UnsupportedFeature(
-            "Embedded ICC color profiles are currently not supported".to_owned(),
-        ));
-    }
+    let icc_profile = if profile_type == ColorProfileType::ICC {
+        let icc_length = reader.dword()? as usize;
+        Some(reader.take_bytes(icc_length)?)
+    } else {
+        None
+    };
 
     Ok(ColorProfile {
         profile_type,
         fixed_gamma,
+        icc_profile,
     })
 }
 

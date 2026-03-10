@@ -31,7 +31,7 @@ pub struct AsepriteFile {
     // palette is an Arc because every chunk of pixel data will reference it (read-only).
     pub(crate) palette: Option<Arc<ColorPalette>>,
     pub(crate) layers: LayersData,
-    // pub(crate) color_profile: Option<ColorProfile>,
+    pub(crate) color_profile: Option<color_profile::ColorProfile>,
     pub(crate) frame_times: Vec<u16>,
     pub(crate) tags: Vec<Tag>,
     pub(crate) framedata: CelsData<Pixels>, // Vec<Vec<cel::RawCel>>,
@@ -301,9 +301,11 @@ impl AsepriteFile {
         &self.slices
     }
 
-    // pub fn color_profile(&self) -> Option<&ColorProfile> {
-    //     self.color_profile.as_ref()
-    // }
+    /// The color profile of the sprite, if one is set.
+    /// Returns `None` if the file does not contain a color profile chunk.
+    pub fn color_profile(&self) -> Option<&color_profile::ColorProfile> {
+        self.color_profile.as_ref()
+    }
 
     /// Construct the image belonging to the specific animation frame. Combines
     /// layers according to their blend mode. Skips invisible layers (i.e.,
